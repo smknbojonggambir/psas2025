@@ -284,11 +284,10 @@
 
   <script>
     // =========================================================================================
-    // ⚠️ PENTING: GANTI SHEET_ID DI BAWAH INI DENGAN ID DARI GOOGLE SHEET ANDA
-    // Pastikan Sheet sudah di 'Publish to the web'
+    // ⚠️ PENTING: ID GOOGLE SHEET ANDA
     // -----------------------------------------------------------------------------------------
-    const SHEET_ID = '1kwFNauaPL6jrEUUaL2jPbJqkHk09RZPSzrwr_K8UgF4'; // 👈👈 GANTI INI
-    const SHEET_GID = '0'; // GID (ID Tab) yang berisi data jadwal. Biasanya '0' untuk tab pertama
+    const SHEET_ID = '1kwFNauaPL6jrEUUaL2jPbJqkHk09RZPSzrwr_K8UgF4'; // 👈 ID dari URL yang Anda berikan
+    const SHEET_GID = '0'; // GID (ID Tab)
     const GOOGLE_SHEET_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&gid=${SHEET_GID}`;
     // =========================================================================================
     
@@ -329,8 +328,8 @@
             const data = JSON.parse(jsonText);
             
             // Mapping kolom ke properti yang diperlukan
-            // Asumsi urutan kolom di Sheet:
-            // No. (A), Hari (B), Tanggal (C), Sesi Ujian (Display) (D), Kelas (E), Mata Pelajaran (F), Jam Mulai (G), Jam Selesai (H), Link Soal (I)
+            // Asumsi urutan kolom:
+            // No.(0), Hari(1), Tanggal(2), Sesi Ujian (Display)(3), Kelas(4), Mata Pelajaran(5), Jam Mulai(6), Jam Selesai(7), Link Soal(8)
             const rawRows = data.table.rows;
             
             const fetchedData = rawRows.map(row => {
@@ -338,19 +337,30 @@
                 
                 // Mendapatkan nilai dari sel, menangani nilai null
                 const getValue = (index) => rowData[index] && rowData[index].v !== undefined ? rowData[index].v : null;
+                // Mendapatkan nilai yang diformat (misalnya format tanggal atau jam yang terlihat)
                 const getFormattedValue = (index) => rowData[index] && rowData[index].f !== undefined ? rowData[index].f : getValue(index);
 
+                // --- Mapping ke Kolom di Sheet Anda ---
+                const hariAlias = getFormattedValue(1);       // Kolom B (Hari)
+                const tanggalDisplay = getFormattedValue(2);  // Kolom C (Tanggal - e.g., "11/26/2025")
+                const kelas = getValue(4);                    // Kolom E (Kelas)
+                const actualLink = getValue(8);               // Kolom I (Link Soal)
+
+                // Skip baris jika data dasar tidak lengkap
+                if (!hariAlias || !tanggalDisplay || !kelas || !actualLink) return null;
+
                 return {
-                    hariAlias: getFormattedValue(1),       // Kolom B (Hari)
-                    tanggal: getFormattedValue(2),         // Kolom C (Tanggal)
-                    waktuDisplay: getValue(3),             // Kolom D (Sesi Ujian Display)
-                    kelas: getValue(4),                    // Kolom E (Kelas)
+                    hariTanggalDisplay: `${hariAlias}, ${tanggalDisplay}`, 
+                    waktuDisplay: getFormattedValue(3),           // Kolom D (Sesi Ujian Display) - e.g., "08.00-20.30"
+                    kelas: kelas,
                     mapel: getValue(5),                    // Kolom F (Mata Pelajaran)
-                    jamMulai: getValue(6),                 // Kolom G (Jam Mulai HH:MM)
-                    jamSelesai: getValue(7),               // Kolom H (Jam Selesai HH:MM)
-                    actualLink: getValue(8)                // Kolom I (Link Soal)
+                    jamMulai: getFormattedValue(6),        // Kolom G (Jam Mulai) - e.g., "8:00:00 AM"
+                    jamSelesai: getFormattedValue(7),      // Kolom H (Jam Selesai) - e.g., "20:30:00 PM"
+                    actualLink: actualLink,
+                    hariAlias: hariAlias,
+                    tanggal: tanggalDisplay // Digunakan untuk parsing tanggal
                 };
-            }).filter(item => item.kelas && item.hariAlias && item.tanggal); 
+            }).filter(item => item !== null); 
 
             scheduleData = fetchedData;
             
@@ -358,60 +368,52 @@
 
         } catch (error) {
             console.error("Gagal mengambil data dari Google Sheet:", error);
-            alert("⚠️ Gagal memuat jadwal ujian dari Google Sheet. Pastikan ID Sheet sudah benar dan sudah dipublikasikan.");
+            alert("⚠️ Gagal memuat jadwal ujian dari Google Sheet. Pastikan ID Sheet sudah benar, sudah dipublikasikan (File > Share > Publish to web), dan format kolom (Tanggal & Waktu) di sheet sudah benar.");
         } finally {
             kelasSelectionCard.classList.remove('d-none');
         }
     }
     
     /**
-     * PERBAIKAN: Fungsi parseDateTime kini dapat menangani format tanggal DD MonthName YYYY dan MM/DD/YYYY
-     * Serta membersihkan string waktu dari detail seperti ":00 AM/PM".
+     * PERBAIKAN FUNGSI: Mengurai tanggal dan jam dengan lebih robust
+     * untuk menangani format umum dari Google Sheet API (MM/DD/YYYY atau DD/MM/YYYY
+     * dan membersihkan string waktu dari AM/PM/detik yang tidak perlu).
      */
     function parseDateTime(tanggalBagian, jamBagian) {
         let dateObj;
         
         // --- 1. PRE-PROCESSING JAM ---
         // Bersihkan string waktu dari " AM", " PM", dan ":00" di akhir
-        const cleanJamBagian = String(jamBagian).toUpperCase().replace(/\s*(AM|PM)\s*$/, '').replace(/:00$/, '');
+        let cleanJamBagian = String(jamBagian).toUpperCase();
+        cleanJamBagian = cleanJamBagian.replace(/\s*(AM|PM)\s*$/, '').replace(/:00$/, '').trim();
+        
         const timeParts = cleanJamBagian.split(":").map(s => parseInt(s.trim()));
         const hours = timeParts[0];
         const minutes = timeParts.length > 1 ? timeParts[1] : 0;
         
-        // --- 2. PRE-PROCESSING TANGGAL (Try 1: DD MonthName YYYY) ---
-        const monthMap = {
-            "Januari": 0, "Februari": 1, "Maret": 2, "April": 3, "Mei": 4, "Juni": 5,
-            "Juli": 6, "Agustus": 7, "September": 8, "Oktober": 9, "November": 10, "Desember": 11
-        };
-        const idDateMatch = String(tanggalBagian).match(/(\d{1,2})\s+([A-Za-z]+)\s+(\d{4})/);
-
-        if (idDateMatch) {
-            const [, dayStr, monthName, yearStr] = idDateMatch;
-            if (monthMap[monthName]) {
-                 dateObj = new Date(parseInt(yearStr), monthMap[monthName], parseInt(dayStr));
-            }
-        } 
+        // --- 2. PRE-PROCESSING TANGGAL (Try Slash Format MM/DD/YYYY atau DD/MM/YYYY) ---
+        const slashDateMatch = String(tanggalBagian).match(/(\d{1,2})\/(\d{1,2})\/(\d{2,4})/);
         
-        // --- 3. PRE-PROCESSING TANGGAL (Try 2: Slash Format MM/DD/YYYY atau DD/MM/YYYY) ---
-        if (!dateObj || isNaN(dateObj.valueOf())) {
-            const slashDateMatch = String(tanggalBagian).match(/(\d{1,2})\/(\d{1,2})\/(\d{2,4})/);
-            if (slashDateMatch) {
-                // Asumsi data Google Sheet API biasanya MM/DD/YYYY
-                const [, monthStr, dayStr, yearStr] = slashDateMatch;
-                const year = parseInt(yearStr.length === 2 ? `20${yearStr}` : yearStr);
-                // JS Date (YYYY, MM-1, DD)
-                dateObj = new Date(year, parseInt(monthStr) - 1, parseInt(dayStr));
-            }
+        if (slashDateMatch) {
+            // Asumsi format default Google Sheet API biasanya MM/DD/YYYY
+            const [, monthStr, dayStr, yearStr] = slashDateMatch;
+            const year = parseInt(yearStr.length === 2 ? `20${yearStr}` : yearStr);
+            // JS Date menggunakan (YYYY, MM-1, DD)
+            dateObj = new Date(year, parseInt(monthStr) - 1, parseInt(dayStr));
         }
         
-        // --- 4. VALIDASI & SET WAKTU ---
+        // --- 3. VALIDASI & SET WAKTU ---
         if (!dateObj || isNaN(dateObj.valueOf())) {
-            console.error("Format tanggal tidak dapat diuraikan:", tanggalBagian);
-            return new Date(NaN);
+            // Coba parsing langsung string tanggal (untuk kasus DD MonthName YYYY jika ada)
+            dateObj = new Date(tanggalBagian); 
+            if (isNaN(dateObj.valueOf())) {
+                console.error("Format tanggal tidak dapat diuraikan:", tanggalBagian);
+                return new Date(NaN);
+            }
         }
 
         if (isNaN(hours) || isNaN(minutes)) {
-             console.error("Format jam tidak valid:", jamBagian);
+             console.error("Format jam tidak valid setelah dibersihkan:", jamBagian);
              return new Date(NaN);
         }
         
@@ -471,9 +473,10 @@
 
         const filteredByKelas = scheduleData.filter(item => item.kelas === selectedSpecificKelas);
         
+        // Menggunakan Map untuk memastikan setiap hari unik dan mengambil nama hari/tanggal display
         const uniqueHariMap = filteredByKelas.reduce((map, item) => {
             if (item.hariAlias && item.tanggal) {
-                map[item.hariAlias] = `${item.hariAlias}, ${item.tanggal}`;
+                map[item.hariAlias] = item.hariTanggalDisplay;
             }
             return map;
         }, {});
@@ -519,11 +522,15 @@
             filteredByKelasAndHari.sort((a,b) => {
                 const timeA = parseDateTime(a.tanggal, a.jamMulai);
                 const timeB = parseDateTime(b.tanggal, b.jamMulai);
+                // Handle kasus NaN untuk sorting
+                if (isNaN(timeA.valueOf())) return 1;
+                if (isNaN(timeB.valueOf())) return -1;
                 return timeA - timeB;
             });
 
             filteredByKelasAndHari.forEach((item) => {
                 const option = document.createElement("option");
+                // Simpan indeks item di scheduleData agar mudah diambil kembali
                 const dataIndex = scheduleData.findIndex(dataItem => dataItem === item);
                 if (dataIndex !== -1) {
                     option.value = dataIndex; 
@@ -553,11 +560,11 @@
             linkMapelBtn.dataset.jamMulai = examItem.jamMulai;
             linkMapelBtn.dataset.jamSelesai = examItem.jamSelesai;
             
-            const mapelNameShort = examItem.mapel.substring(0,30) + (examItem.mapel.length > 30 ? '...' : '');
+            const mapelNameShort = examItem.mapel.substring(0,25) + (examItem.mapel.length > 25 ? '...' : '');
             if(linkMapelBtnTextSpan) {
-                 linkMapelBtnTextSpan.textContent = ` Buka Soal ${mapelNameShort}`;
+                 linkMapelBtnTextSpan.textContent = ` Buka ${mapelNameShort}`;
             } else {
-                 linkMapelBtn.innerHTML = `<i class="bi bi-box-arrow-up-right"></i> <span>Buka Soal ${mapelNameShort}</span>`;
+                 linkMapelBtn.innerHTML = `<i class="bi bi-box-arrow-up-right"></i> <span>Buka ${mapelNameShort}</span>`;
             }
             linkMapelBtn.classList.remove("d-none");
         } else {
@@ -580,8 +587,12 @@
         const startTime = parseDateTime(tanggal, jamMulai);
         const endTime = parseDateTime(tanggal, jamSelesai);
         
-        if (isNaN(startTime.valueOf()) || isNaN(endTime.valueOf())) {
-             alert("Waktu ujian tidak valid. Silakan hubungi administrator. (Kode Eror: Gagal parsing waktu)");
+        if (isNaN(startTime.valueOf())) {
+             alert("Waktu Mulai Ujian tidak valid. Silakan hubungi administrator. (Kode Eror: Gagal parsing Waktu Mulai)");
+             return;
+        }
+        if (isNaN(endTime.valueOf())) {
+             alert("Waktu Selesai Ujian tidak valid. Silakan hubungi administrator. (Kode Eror: Gagal parsing Waktu Selesai)");
              return;
         }
 
@@ -612,7 +623,7 @@
     document.addEventListener('DOMContentLoaded', function() {
         updateCurrentTimeDisplay();
         setInterval(updateCurrentTimeDisplay, 1000);
-        fetchScheduleData();
+        fetchScheduleData(); // 👈 Panggil fungsi untuk ambil data dari Google Sheet
     });
   </script>
 </body>
