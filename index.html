@@ -285,8 +285,7 @@
   <script>
     // =========================================================================================
     // ⚠️ PENTING: GANTI SHEET_ID DI BAWAH INI DENGAN ID DARI GOOGLE SHEET ANDA
-    // Anda bisa mendapatkan ID ini dari URL saat Anda mengedit sheet (antara /d/ dan /edit)
-    // Contoh: https://docs.google.com/spreadsheets/d/1X-s4rY6p0W.../edit#gid=0
+    // Pastikan Sheet sudah di 'Publish to the web'
     // -----------------------------------------------------------------------------------------
     const SHEET_ID = '1kwFNauaPL6jrEUUaL2jPbJqkHk09RZPSzrwr_K8UgF4'; // 👈👈 GANTI INI
     const SHEET_GID = '0'; // GID (ID Tab) yang berisi data jadwal. Biasanya '0' untuk tab pertama
@@ -319,7 +318,6 @@
      * Mengambil data dari Google Sheet dan mengubahnya menjadi array objek
      */
     async function fetchScheduleData() {
-        // Tampilkan status loading dengan menyembunyikan card utama sementara
         kelasSelectionCard.classList.add('d-none');
         
         try {
@@ -352,45 +350,74 @@
                     jamSelesai: getValue(7),               // Kolom H (Jam Selesai HH:MM)
                     actualLink: getValue(8)                // Kolom I (Link Soal)
                 };
-            }).filter(item => item.kelas && item.hariAlias && item.tanggal); // Filter data yang tidak lengkap
+            }).filter(item => item.kelas && item.hariAlias && item.tanggal); 
 
             scheduleData = fetchedData;
             
-            // Setelah data dimuat, isi dropdown Kelas
             populateKelasDropdown();
 
         } catch (error) {
             console.error("Gagal mengambil data dari Google Sheet:", error);
-            alert("⚠️ Gagal memuat jadwal ujian dari Google Sheet. Pastikan ID Sheet dan GID sudah benar, serta Sheet sudah dipublikasikan.");
+            alert("⚠️ Gagal memuat jadwal ujian dari Google Sheet. Pastikan ID Sheet sudah benar dan sudah dipublikasikan.");
         } finally {
-            // Tampilkan kembali card utama
             kelasSelectionCard.classList.remove('d-none');
         }
     }
     
+    /**
+     * PERBAIKAN: Fungsi parseDateTime kini dapat menangani format tanggal DD MonthName YYYY dan MM/DD/YYYY
+     * Serta membersihkan string waktu dari detail seperti ":00 AM/PM".
+     */
     function parseDateTime(tanggalBagian, jamBagian) {
-        // Fungsi untuk mengonversi string tanggal ("10 Juni 2025") dan waktu ("08:00") menjadi objek Date
-        const dateRegex = /(\d{1,2})\s+([A-Za-z]+)\s+(\d{4})/;
-        const match = tanggalBagian.match(dateRegex);
+        let dateObj;
         
-        if (!match) {
-             console.error("Format tanggal tidak valid:", tanggalBagian);
-             return new Date(NaN);
-        }
-
-        const [ , dayStr, monthName, yearStr] = match;
+        // --- 1. PRE-PROCESSING JAM ---
+        // Bersihkan string waktu dari " AM", " PM", dan ":00" di akhir
+        const cleanJamBagian = String(jamBagian).toUpperCase().replace(/\s*(AM|PM)\s*$/, '').replace(/:00$/, '');
+        const timeParts = cleanJamBagian.split(":").map(s => parseInt(s.trim()));
+        const hours = timeParts[0];
+        const minutes = timeParts.length > 1 ? timeParts[1] : 0;
+        
+        // --- 2. PRE-PROCESSING TANGGAL (Try 1: DD MonthName YYYY) ---
         const monthMap = {
             "Januari": 0, "Februari": 1, "Maret": 2, "April": 3, "Mei": 4, "Juni": 5,
             "Juli": 6, "Agustus": 7, "September": 8, "Oktober": 9, "November": 10, "Desember": 11
         };
-        const [hours, minutes] = jamBagian.split(":").map(Number);
+        const idDateMatch = String(tanggalBagian).match(/(\d{1,2})\s+([A-Za-z]+)\s+(\d{4})/);
+
+        if (idDateMatch) {
+            const [, dayStr, monthName, yearStr] = idDateMatch;
+            if (monthMap[monthName]) {
+                 dateObj = new Date(parseInt(yearStr), monthMap[monthName], parseInt(dayStr));
+            }
+        } 
         
-        if (monthMap[monthName] === undefined || isNaN(hours) || isNaN(minutes)) {
-            console.error("Invalid month/time input to parseDateTime:", monthName, jamBagian);
-            return new Date(NaN);
+        // --- 3. PRE-PROCESSING TANGGAL (Try 2: Slash Format MM/DD/YYYY atau DD/MM/YYYY) ---
+        if (!dateObj || isNaN(dateObj.valueOf())) {
+            const slashDateMatch = String(tanggalBagian).match(/(\d{1,2})\/(\d{1,2})\/(\d{2,4})/);
+            if (slashDateMatch) {
+                // Asumsi data Google Sheet API biasanya MM/DD/YYYY
+                const [, monthStr, dayStr, yearStr] = slashDateMatch;
+                const year = parseInt(yearStr.length === 2 ? `20${yearStr}` : yearStr);
+                // JS Date (YYYY, MM-1, DD)
+                dateObj = new Date(year, parseInt(monthStr) - 1, parseInt(dayStr));
+            }
         }
         
-        return new Date(parseInt(yearStr), monthMap[monthName], parseInt(dayStr), hours, minutes, 0);
+        // --- 4. VALIDASI & SET WAKTU ---
+        if (!dateObj || isNaN(dateObj.valueOf())) {
+            console.error("Format tanggal tidak dapat diuraikan:", tanggalBagian);
+            return new Date(NaN);
+        }
+
+        if (isNaN(hours) || isNaN(minutes)) {
+             console.error("Format jam tidak valid:", jamBagian);
+             return new Date(NaN);
+        }
+        
+        // Set komponen waktu
+        dateObj.setHours(hours, minutes, 0, 0);
+        return dateObj;
     }
 
     function updateCurrentTimeDisplay() {
@@ -444,7 +471,6 @@
 
         const filteredByKelas = scheduleData.filter(item => item.kelas === selectedSpecificKelas);
         
-        // Membuat daftar hari unik (alias) dan lengkap (alias + tanggal)
         const uniqueHariMap = filteredByKelas.reduce((map, item) => {
             if (item.hariAlias && item.tanggal) {
                 map[item.hariAlias] = `${item.hariAlias}, ${item.tanggal}`;
@@ -461,7 +487,7 @@
         if (uniqueHari.length > 0) {
             uniqueHari.forEach(hariAlias => {
                 const option = document.createElement("option");
-                option.value = hariAlias; // e.g., "Selasa"
+                option.value = hariAlias; 
                 option.textContent = uniqueHariMap[hariAlias]; 
                 hariSelect.appendChild(option);
             });
@@ -498,11 +524,10 @@
 
             filteredByKelasAndHari.forEach((item) => {
                 const option = document.createElement("option");
-                // Menggunakan index di scheduleData untuk referensi
                 const dataIndex = scheduleData.findIndex(dataItem => dataItem === item);
                 if (dataIndex !== -1) {
                     option.value = dataIndex; 
-                    option.textContent = `${item.mapel} - ${item.waktuDisplay}`; // Teks: "Mata Pelajaran - 08.00-09.30"
+                    option.textContent = `${item.mapel} - ${item.waktuDisplay}`; 
                     mapelSelect.appendChild(option);
                 }
             });
@@ -528,7 +553,6 @@
             linkMapelBtn.dataset.jamMulai = examItem.jamMulai;
             linkMapelBtn.dataset.jamSelesai = examItem.jamSelesai;
             
-            // Tampilkan nama mapel yang lebih singkat di tombol
             const mapelNameShort = examItem.mapel.substring(0,30) + (examItem.mapel.length > 30 ? '...' : '');
             if(linkMapelBtnTextSpan) {
                  linkMapelBtnTextSpan.textContent = ` Buka Soal ${mapelNameShort}`;
@@ -557,7 +581,7 @@
         const endTime = parseDateTime(tanggal, jamSelesai);
         
         if (isNaN(startTime.valueOf()) || isNaN(endTime.valueOf())) {
-             alert("Waktu ujian tidak valid. Silakan hubungi administrator.");
+             alert("Waktu ujian tidak valid. Silakan hubungi administrator. (Kode Eror: Gagal parsing waktu)");
              return;
         }
 
@@ -588,7 +612,7 @@
     document.addEventListener('DOMContentLoaded', function() {
         updateCurrentTimeDisplay();
         setInterval(updateCurrentTimeDisplay, 1000);
-        fetchScheduleData(); // Panggil fungsi untuk memuat data dari Sheet
+        fetchScheduleData();
     });
   </script>
 </body>
