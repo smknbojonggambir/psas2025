@@ -250,17 +250,8 @@
     <div id="kelas-selection-card" class="card">
       <label for="kelas" class="form-label">Pilih Kelas Anda:</label>
       <select id="kelas" class="form-select mb-3" aria-label="Pilih Kelas Anda">
-        <option value="" disabled selected>-- Silakan Pilih Kelas --</option>
-        <option value="X DKV1">X DKV 1</option>
-        <option value="X DKV2">X DKV 2</option>
-         <option value="XI DKV">XI DKV 1</option>
-         <option value="XI DKV">XI DKV 2</option>
-         <option value="XI DKV">XI DKV 3</option>
-         <option value="XII DKV">XII DKV</option>
-        <option value="X APHP">X APHP</option>
-        <option value="XI APHP">XI APHP</option>
-        <option value="XII APHP">XII APHP</option>
-      </select>
+        <option value="" disabled selected>-- Memuat Jadwal Ujian... --</option>
+        </select>
       <button id="btnPilihKelas" class="btn btn-primary w-100">
         Lanjut <i class="bi bi-arrow-right-circle-fill"></i>
       </button>
@@ -292,87 +283,20 @@
   </div>
 
   <script>
+    // =========================================================================================
+    // ⚠️ PENTING: GANTI SHEET_ID DI BAWAH INI DENGAN ID DARI GOOGLE SHEET ANDA
+    // Anda bisa mendapatkan ID ini dari URL saat Anda mengedit sheet (antara /d/ dan /edit)
+    // Contoh: https://docs.google.com/spreadsheets/d/1X-s4rY6p0W.../edit#gid=0
+    // -----------------------------------------------------------------------------------------
+    const SHEET_ID = 'GANTI_DENGAN_ID_GOOGLE_SHEET_ANDA'; // 👈👈 GANTI INI
+    const SHEET_GID = '0'; // GID (ID Tab) yang berisi data jadwal. Biasanya '0' untuk tab pertama
+    const GOOGLE_SHEET_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&gid=${SHEET_GID}`;
+    // =========================================================================================
+    
     const belumDimulaiUrl = "https://smknbojonggambir.github.io/psat/belum-dimulai.html";
-    //const sudahBerakhirUrl = "https://www.kangruli.web.id/";
+    const sudahBerakhirUrl = "https://www.kangruli.web.id/"; // Ganti dengan URL halaman ujian berakhir
 
-    // Data Jadwal (dihapus properti gradeLevel karena kelas sudah spesifik)
-    const scheduleData = [
-     
-        // Selasa, 10 Juni 2025
-        { hariTanggalDisplay: "Selasa, 10 Juni 2025", waktuDisplay: "08.00-09.30", kelas: "X APHP", mapel: "Pendidikan Agama dan Budi Pekerti", actualLink: "https://forms.gle/QVSneo9pnqy5C2ym9", tanggal: "10 Juni 2025", jamMulai: "08:00", jamSelesai: "09:30", hariAlias: "Selasa" },
-        { hariTanggalDisplay: "Selasa, 10 Juni 2025", waktuDisplay: "08.00-09.30", kelas: "XI APHP", mapel: "Pendidikan Agama dan Budi Pekerti", actualLink: "https://forms.gle/Wu9YbEjpPvEVaCXj8", tanggal: "10 Juni 2025", jamMulai: "08:00", jamSelesai: "09:30", hariAlias: "Selasa" },
-        { hariTanggalDisplay: "Selasa, 10 Juni 2025", waktuDisplay: "08.00-09.30", kelas: "X DKV1", mapel: "Pendidikan Agama dan Budi Pekerti", actualLink: "https://forms.gle/QVSneo9pnqy5C2ym9", tanggal: "10 Juni 2025", jamMulai: "08:00", jamSelesai: "09:30", hariAlias: "Selasa" },
-        { hariTanggalDisplay: "Selasa, 10 Juni 2025", waktuDisplay: "08.00-09.30", kelas: "X DKV2", mapel: "Pendidikan Agama dan Budi Pekerti", actualLink: "https://forms.gle/QVSneo9pnqy5C2ym9", tanggal: "10 Juni 2025", jamMulai: "08:00", jamSelesai: "09:30", hariAlias: "Selasa" },
-        { hariTanggalDisplay: "Selasa, 10 Juni 2025", waktuDisplay: "08.00-09.30", kelas: "X DKV3", mapel: "Pendidikan Agama dan Budi Pekerti", actualLink: "https://forms.gle/QVSneo9pnqy5C2ym9", tanggal: "10 Juni 2025", jamMulai: "08:00", jamSelesai: "09:30", hariAlias: "Selasa" },
-        { hariTanggalDisplay: "Selasa, 10 Juni 2025", waktuDisplay: "08.00-09.30", kelas: "XI DKV", mapel: "Pendidikan Agama dan Budi Pekerti", actualLink: "https://docs.google.com/forms/d/e/1FAIpQLScdPlGOWoEIojo1mOoL-VVxs3sUyhhp4mR4NNDMwLVpHCvYUA/viewform", tanggal: "10 Juni 2025", jamMulai: "08:00", jamSelesai: "09:30", hariAlias: "Selasa" },
-        { hariTanggalDisplay: "Selasa, 10 Juni 2025", waktuDisplay: "09.45-11.15", kelas: "X APHP", mapel: "Bahasa Indonesia", actualLink: "https://forms.gle/5R1bQAtGutgnqc6F7", tanggal: "10 Juni 2025", jamMulai: "09:45", jamSelesai: "11:15", hariAlias: "Selasa" },
-        { hariTanggalDisplay: "Selasa, 10 Juni 2025", waktuDisplay: "09.45-11.15", kelas: "XI APHP", mapel: "Bahasa Indonesia", actualLink: "https://forms.gle/7ws6S169yUNXpP9FA", tanggal: "10 Juni 2025", jamMulai: "09:45", jamSelesai: "11:15", hariAlias: "Selasa" },
-        { hariTanggalDisplay: "Selasa, 10 Juni 2025", waktuDisplay: "09.45-11.15", kelas: "X DKV1", mapel: "Bahasa Indonesia", actualLink: "https://forms.gle/5R1bQAtGutgnqc6F7", tanggal: "10 Juni 2025", jamMulai: "09:45", jamSelesai: "11:15", hariAlias: "Selasa" },
-        { hariTanggalDisplay: "Selasa, 10 Juni 2025", waktuDisplay: "09.45-11.15", kelas: "X DKV2", mapel: "Bahasa Indonesia", actualLink: "https://forms.gle/5R1bQAtGutgnqc6F7", tanggal: "10 Juni 2025", jamMulai: "09:45", jamSelesai: "11:15", hariAlias: "Selasa" },
-        { hariTanggalDisplay: "Selasa, 10 Juni 2025", waktuDisplay: "09.45-11.15", kelas: "X DKV3", mapel: "Bahasa Indonesia", actualLink: "https://forms.gle/5R1bQAtGutgnqc6F7", tanggal: "10 Juni 2025", jamMulai: "09:45", jamSelesai: "11:15", hariAlias: "Selasa" },
-        { hariTanggalDisplay: "Selasa, 10 Juni 2025", waktuDisplay: "09.45-11.15", kelas: "XI DKV", mapel: "Bahasa Indonesia", actualLink: "https://forms.gle/7ws6S169yUNXpP9FA", tanggal: "10 Juni 2025", jamMulai: "09:45", jamSelesai: "11:15", hariAlias: "Selasa" },
-        { hariTanggalDisplay: "Selasa, 10 Juni 2025", waktuDisplay: "11.30-13.00", kelas: "X APHP", mapel: "Sejarah Indonesia", actualLink: "https://forms.gle/qd3gPrSHsTsGHpst5", tanggal: "10 Juni 2025", jamMulai: "11:30", jamSelesai: "13:00", hariAlias: "Selasa" },
-        { hariTanggalDisplay: "Selasa, 10 Juni 2025", waktuDisplay: "11.30-13.00", kelas: "XI APHP", mapel: "Sejarah Indonesia", actualLink: "https://forms.gle/dvaDExfoqR7d29wQ7", tanggal: "10 Juni 2025", jamMulai: "11:30", jamSelesai: "13:00", hariAlias: "Selasa" },
-        { hariTanggalDisplay: "Selasa, 10 Juni 2025", waktuDisplay: "11.30-13.00", kelas: "X DKV1", mapel: "Sejarah Indonesia", actualLink: "https://forms.gle/qd3gPrSHsTsGHpst5", tanggal: "10 Juni 2025", jamMulai: "11:30", jamSelesai: "13:00", hariAlias: "Selasa" },
-        { hariTanggalDisplay: "Selasa, 10 Juni 2025", waktuDisplay: "11.30-13.00", kelas: "X DKV2", mapel: "Sejarah Indonesia", actualLink: "https://forms.gle/qd3gPrSHsTsGHpst5", tanggal: "10 Juni 2025", jamMulai: "11:30", jamSelesai: "13:00", hariAlias: "Selasa" },
-        { hariTanggalDisplay: "Selasa, 10 Juni 2025", waktuDisplay: "11.30-13.00", kelas: "X DKV3", mapel: "Sejarah Indonesia", actualLink: "https://forms.gle/qd3gPrSHsTsGHpst5", tanggal: "10 Juni 2025", jamMulai: "11:30", jamSelesai: "13:00", hariAlias: "Selasa" },
-        { hariTanggalDisplay: "Selasa, 10 Juni 2025", waktuDisplay: "11.30-13.00", kelas: "XI DKV", mapel: "Sejarah Indonesia", actualLink: "https://forms.gle/dvaDExfoqR7d29wQ7", tanggal: "10 Juni 2025", jamMulai: "11:30", jamSelesai: "13:00", hariAlias: "Selasa" },
-        // Rabu, 11 Juni 2025
-        { hariTanggalDisplay: "Rabu, 11 Juni 2025", waktuDisplay: "08.00-09.30", kelas: "X APHP", mapel: "PPKN", actualLink: "https://forms.gle/5DSWxnrENgaE7AHp6", tanggal: "11 Juni 2025", jamMulai: "08:00", jamSelesai: "09:30", hariAlias: "Rabu" },
-        { hariTanggalDisplay: "Rabu, 11 Juni 2025", waktuDisplay: "08.00-09.30", kelas: "XI APHP", mapel: "PPKN", actualLink: "https://forms.gle/y71vdEoyNGVKTLPN8", tanggal: "11 Juni 2025", jamMulai: "08:00", jamSelesai: "09:30", hariAlias: "Rabu" },
-        { hariTanggalDisplay: "Rabu, 11 Juni 2025", waktuDisplay: "08.00-09.30", kelas: "X DKV1", mapel: "PPKN", actualLink: "https://forms.gle/5DSWxnrENgaE7AHp6", tanggal: "11 Juni 2025", jamMulai: "08:00", jamSelesai: "09:30", hariAlias: "Rabu" },
-        { hariTanggalDisplay: "Rabu, 11 Juni 2025", waktuDisplay: "08.00-09.30", kelas: "X DKV2", mapel: "PPKN", actualLink: "https://forms.gle/5DSWxnrENgaE7AHp6", tanggal: "11 Juni 2025", jamMulai: "08:00", jamSelesai: "09:30", hariAlias: "Rabu" },
-        { hariTanggalDisplay: "Rabu, 11 Juni 2025", waktuDisplay: "08.00-09.30", kelas: "X DKV3", mapel: "PPKN", actualLink: "https://forms.gle/5DSWxnrENgaE7AHp6", tanggal: "11 Juni 2025", jamMulai: "08:00", jamSelesai: "09:30", hariAlias: "Rabu" },
-        { hariTanggalDisplay: "Rabu, 11 Juni 2025", waktuDisplay: "08.00-09.30", kelas: "XI DKV", mapel: "PPKN", actualLink: "https://forms.gle/y71vdEoyNGVKTLPN8", tanggal: "11 Juni 2025", jamMulai: "08:00", jamSelesai: "09:30", hariAlias: "Rabu" },
-        { hariTanggalDisplay: "Rabu, 11 Juni 2025", waktuDisplay: "09.45-11.15", kelas: "X APHP", mapel: "PJOK", actualLink: "https://forms.gle/swPAbxpVNsdXHdp1A", tanggal: "11 Juni 2025", jamMulai: "09:45", jamSelesai: "11:15", hariAlias: "Rabu" },
-        { hariTanggalDisplay: "Rabu, 11 Juni 2025", waktuDisplay: "09.45-11.15", kelas: "XI APHP", mapel: "PJOK", actualLink: "https://forms.gle/ti4Z5bgk3V9gLDW8A", tanggal: "11 Juni 2025", jamMulai: "09:45", jamSelesai: "11:15", hariAlias: "Rabu" },
-        { hariTanggalDisplay: "Rabu, 11 Juni 2025", waktuDisplay: "09.45-11.15", kelas: "X DKV1", mapel: "PJOK", actualLink: "https://forms.gle/swPAbxpVNsdXHdp1A", tanggal: "11 Juni 2025", jamMulai: "09:45", jamSelesai: "11:15", hariAlias: "Rabu" },
-        { hariTanggalDisplay: "Rabu, 11 Juni 2025", waktuDisplay: "09.45-11.15", kelas: "X DKV2", mapel: "PJOK", actualLink: "https://forms.gle/swPAbxpVNsdXHdp1A", tanggal: "11 Juni 2025", jamMulai: "09:45", jamSelesai: "11:15", hariAlias: "Rabu" },
-        { hariTanggalDisplay: "Rabu, 11 Juni 2025", waktuDisplay: "09.45-11.15", kelas: "X DKV3", mapel: "PJOK", actualLink: "https://forms.gle/swPAbxpVNsdXHdp1A", tanggal: "11 Juni 2025", jamMulai: "09:45", jamSelesai: "11:15", hariAlias: "Rabu" },
-        { hariTanggalDisplay: "Rabu, 11 Juni 2025", waktuDisplay: "09.45-11.15", kelas: "XI DKV", mapel: "PJOK", actualLink: "https://forms.gle/ti4Z5bgk3V9gLDW8A", tanggal: "11 Juni 2025", jamMulai: "09:45", jamSelesai: "11:15", hariAlias: "Rabu" },
-        { hariTanggalDisplay: "Rabu, 11 Juni 2025", waktuDisplay: "11.30-13.00", kelas: "X DKV1", mapel: "Seni Budaya (Seni Rupa)", actualLink: "https://forms.gle/g28T2rtig5ebm3x89", tanggal: "11 Juni 2025", jamMulai: "11:30", jamSelesai: "13:00", hariAlias: "Rabu" },
-        { hariTanggalDisplay: "Rabu, 11 Juni 2025", waktuDisplay: "11.30-13.00", kelas: "X DKV2", mapel: "Seni Budaya (Seni Rupa)", actualLink: "https://forms.gle/g28T2rtig5ebm3x89", tanggal: "11 Juni 2025", jamMulai: "11:30", jamSelesai: "13:00", hariAlias: "Rabu" },
-        { hariTanggalDisplay: "Rabu, 11 Juni 2025", waktuDisplay: "11.30-13.00", kelas: "X DKV3", mapel: "Seni Budaya (Seni Rupa)", actualLink: "https://forms.gle/g28T2rtig5ebm3x89", tanggal: "11 Juni 2025", jamMulai: "11:30", jamSelesai: "13:00", hariAlias: "Rabu" },
-      { hariTanggalDisplay: "Rabu, 11 Juni 2025", waktuDisplay: "11.30-13.00", kelas: "X APHP", mapel: "Seni Budaya (Seni Rupa)", actualLink: "https://forms.gle/g28T2rtig5ebm3x89", tanggal: "11 Juni 2025", jamMulai: "11:30", jamSelesai: "13:00", hariAlias: "Rabu" },
-        // Kamis, 12 Juni 2025
-        { hariTanggalDisplay: "Kamis, 12 Juni 2025", waktuDisplay: "08.00-09.30", kelas: "X APHP", mapel: "Bahasa Inggris", actualLink: "https://forms.gle/f2AyxJVe1k9JUPNi8", tanggal: "12 Juni 2025", jamMulai: "08:00", jamSelesai: "09:30", hariAlias: "Kamis" },
-        { hariTanggalDisplay: "Kamis, 12 Juni 2025", waktuDisplay: "08.00-09.30", kelas: "XI APHP", mapel: "Bahasa Inggris", actualLink: "https://forms.gle/AZ84jVK7udkpFnRN9", tanggal: "12 Juni 2025", jamMulai: "08:00", jamSelesai: "09:30", hariAlias: "Kamis" },
-        { hariTanggalDisplay: "Kamis, 12 Juni 2025", waktuDisplay: "08.00-09.30", kelas: "X DKV1", mapel: "Bahasa Inggris", actualLink: "https://forms.gle/f2AyxJVe1k9JUPNi8", tanggal: "12 Juni 2025", jamMulai: "08:00", jamSelesai: "09:30", hariAlias: "Kamis" },
-        { hariTanggalDisplay: "Kamis, 12 Juni 2025", waktuDisplay: "08.00-09.30", kelas: "X DKV2", mapel: "Bahasa Inggris", actualLink: "https://forms.gle/f2AyxJVe1k9JUPNi8", tanggal: "12 Juni 2025", jamMulai: "08:00", jamSelesai: "09:30", hariAlias: "Kamis" },
-        { hariTanggalDisplay: "Kamis, 12 Juni 2025", waktuDisplay: "08.00-09.30", kelas: "X DKV3", mapel: "Bahasa Inggris", actualLink: "https://forms.gle/f2AyxJVe1k9JUPNi8", tanggal: "12 Juni 2025", jamMulai: "08:00", jamSelesai: "09:30", hariAlias: "Kamis" },
-        { hariTanggalDisplay: "Kamis, 12 Juni 2025", waktuDisplay: "08.00-09.30", kelas: "XI DKV", mapel: "Bahasa Inggris", actualLink: "https://forms.gle/AZ84jVK7udkpFnRN9", tanggal: "12 Juni 2025", jamMulai: "08:00", jamSelesai: "09:30", hariAlias: "Kamis" },
-        { hariTanggalDisplay: "Kamis, 12 Juni 2025", waktuDisplay: "09.45-11.15", kelas: "X APHP", mapel: "Bahasa Sunda", actualLink: "https://forms.gle/dZBSPkX6YGXAGYFa8", tanggal: "12 Juni 2025", jamMulai: "09:45", jamSelesai: "11:15", hariAlias: "Kamis" },
-        { hariTanggalDisplay: "Kamis, 12 Juni 2025", waktuDisplay: "09.45-11.15", kelas: "XI APHP", mapel: "Bahasa Sunda", actualLink: "https://forms.gle/722RGdgBhFWKzKCY7", tanggal: "12 Juni 2025", jamMulai: "09:45", jamSelesai: "11:15", hariAlias: "Kamis" },
-        { hariTanggalDisplay: "Kamis, 12 Juni 2025", waktuDisplay: "09.45-11.15", kelas: "X DKV1", mapel: "Bahasa Sunda", actualLink: "https://forms.gle/dZBSPkX6YGXAGYFa8", tanggal: "12 Juni 2025", jamMulai: "09:45", jamSelesai: "11:15", hariAlias: "Kamis" },
-        { hariTanggalDisplay: "Kamis, 12 Juni 2025", waktuDisplay: "09.45-11.15", kelas: "X DKV2", mapel: "Bahasa Sunda", actualLink: "https://forms.gle/dZBSPkX6YGXAGYFa8", tanggal: "12 Juni 2025", jamMulai: "09:45", jamSelesai: "11:15", hariAlias: "Kamis" },
-        { hariTanggalDisplay: "Kamis, 12 Juni 2025", waktuDisplay: "09.45-11.15", kelas: "X DKV3", mapel: "Bahasa Sunda", actualLink: "https://forms.gle/dZBSPkX6YGXAGYFa8", tanggal: "12 Juni 2025", jamMulai: "09:45", jamSelesai: "11:15", hariAlias: "Kamis" },
-        { hariTanggalDisplay: "Kamis, 12 Juni 2025", waktuDisplay: "09.45-11.15", kelas: "XI DKV", mapel: "Bahasa Sunda", actualLink: "https://forms.gle/722RGdgBhFWKzKCY7", tanggal: "12 Juni 2025", jamMulai: "09:45", jamSelesai: "11:15", hariAlias: "Kamis" },
-        { hariTanggalDisplay: "Kamis, 12 Juni 2025", waktuDisplay: "11.30-13.00", kelas: "X APHP", mapel: "IPAS", actualLink: "https://forms.gle/qo3ef7DT7Qhi6pDW8", tanggal: "12 Juni 2025", jamMulai: "11:30", jamSelesai: "13:00", hariAlias: "Kamis" },
-        { hariTanggalDisplay: "Kamis, 12 Juni 2025", waktuDisplay: "11.30-13.00", kelas: "XI APHP", mapel: "Agribisnis Pengolahan Hasil Pertanian", actualLink: "https://forms.gle/J3qkeqoHeg7c4NTm8", tanggal: "12 Juni 2025", jamMulai: "11:30", jamSelesai: "13:00", hariAlias: "Kamis" },
-        { hariTanggalDisplay: "Kamis, 12 Juni 2025", waktuDisplay: "11.30-13.00", kelas: "X DKV1", mapel: "IPAS", actualLink: "https://forms.gle/qo3ef7DT7Qhi6pDW8", tanggal: "12 Juni 2025", jamMulai: "11:30", jamSelesai: "13:00", hariAlias: "Kamis" },
-        { hariTanggalDisplay: "Kamis, 12 Juni 2025", waktuDisplay: "11.30-13.00", kelas: "X DKV2", mapel: "IPAS", actualLink: "https://forms.gle/qo3ef7DT7Qhi6pDW8", tanggal: "12 Juni 2025", jamMulai: "11:30", jamSelesai: "13:00", hariAlias: "Kamis" },
-        { hariTanggalDisplay: "Kamis, 12 Juni 2025", waktuDisplay: "11.30-13.00", kelas: "X DKV3", mapel: "IPAS", actualLink: "https://forms.gle/qo3ef7DT7Qhi6pDW8", tanggal: "12 Juni 2025", jamMulai: "11:30", jamSelesai: "13:00", hariAlias: "Kamis" },
-        { hariTanggalDisplay: "Kamis, 12 Juni 2025", waktuDisplay: "11.30-13.00", kelas: "XI DKV", mapel: "Desain Komunikasi Visual", actualLink: "https://forms.gle/vTFro3HWnxXd27Hn7", tanggal: "12 Juni 2025", jamMulai: "11:30", jamSelesai: "13:00", hariAlias: "Kamis" },
-        // Jumat, 13 Juni 2025
-        { hariTanggalDisplay: "Jumat, 13 Juni 2025", waktuDisplay: "08.00-09.30", kelas: "X APHP", mapel: "Matematika", actualLink: "https://smknbojonggambir.github.io/psat/redirect.html", tanggal: "13 Juni 2025", jamMulai: "08:00", jamSelesai: "09:30", hariAlias: "Jumat" },
-        { hariTanggalDisplay: "Jumat, 13 Juni 2025", waktuDisplay: "08.00-09.30", kelas: "XI APHP", mapel: "Matematika", actualLink: "https://smknbojonggambir.github.io/psat/ServerSedangDown.html", tanggal: "13 Juni 2025", jamMulai: "08:00", jamSelesai: "09:30", hariAlias: "Jumat" },
-        { hariTanggalDisplay: "Jumat, 13 Juni 2025", waktuDisplay: "08.00-09.30", kelas: "X DKV1", mapel: "Matematika", actualLink: "https://smknbojonggambir.github.io/psat/redirect.html", tanggal: "13 Juni 2025", jamMulai: "08:00", jamSelesai: "09:30", hariAlias: "Jumat" },
-        { hariTanggalDisplay: "Jumat, 13 Juni 2025", waktuDisplay: "08.00-09.30", kelas: "X DKV2", mapel: "Matematika", actualLink: "https://smknbojonggambir.github.io/psat/redirect.html", tanggal: "13 Juni 2025", jamMulai: "08:00", jamSelesai: "09:30", hariAlias: "Jumat" },
-        { hariTanggalDisplay: "Jumat, 13 Juni 2025", waktuDisplay: "08.00-09.30", kelas: "X DKV3", mapel: "Matematika", actualLink: "https://smknbojonggambir.github.io/psat/redirect.html", tanggal: "13 Juni 2025", jamMulai: "08:00", jamSelesai: "09:30", hariAlias: "Jumat" },
-        { hariTanggalDisplay: "Jumat, 13 Juni 2025", waktuDisplay: "08.00-09.30", kelas: "XI DKV", mapel: "Matematika", actualLink: "https://smknbojonggambir.github.io/psat/ServerSedangDown.html", tanggal: "13 Juni 2025", jamMulai: "08:00", jamSelesai: "09:30", hariAlias: "Jumat" },
-        { hariTanggalDisplay: "Jumat, 13 Juni 2025", waktuDisplay: "09.45-11.15", kelas: "X APHP", mapel: "INFORMATIKA", actualLink: "http://tiny.cc/psatinformatika", tanggal: "13 Juni 2025", jamMulai: "09:45", jamSelesai: "11:15", hariAlias: "Jumat" },
-        { hariTanggalDisplay: "Jumat, 13 Juni 2025", waktuDisplay: "09.45-11.15", kelas: "XI APHP", mapel: "Digital Branding (Mata Pelajaran Pilihan)", actualLink: "https://forms.gle/vYBaGbDvTMU9BknY9", tanggal: "13 Juni 2025", jamMulai: "09:45", jamSelesai: "11:15", hariAlias: "Jumat" },
-        { hariTanggalDisplay: "Jumat, 13 Juni 2025", waktuDisplay: "09.45-11.15", kelas: "X DKV1", mapel: "INFORMATIKA", actualLink: "http://tiny.cc/psatinformatika", tanggal: "13 Juni 2025", jamMulai: "09:45", jamSelesai: "11:15", hariAlias: "Jumat" },
-        { hariTanggalDisplay: "Jumat, 13 Juni 2025", waktuDisplay: "09.45-11.15", kelas: "X DKV2", mapel: "INFORMATIKA", actualLink: "http://tiny.cc/psatinformatika", tanggal: "13 Juni 2025", jamMulai: "09:45", jamSelesai: "11:15", hariAlias: "Jumat" },
-        { hariTanggalDisplay: "Jumat, 13 Juni 2025", waktuDisplay: "09.45-11.15", kelas: "X DKV3", mapel: "INFORMATIKA", actualLink: "http://tiny.cc/psatinformatika", tanggal: "13 Juni 2025", jamMulai: "09:45", jamSelesai: "11:15", hariAlias: "Jumat" },
-        { hariTanggalDisplay: "Jumat, 13 Juni 2025", waktuDisplay: "09.45-11.15", kelas: "XI DKV", mapel: "Fotografi dan Videografi (Mata Pelajaran Pilihan)", actualLink: "https://forms.gle/BMDKRML7bJ4vaF498", tanggal: "13 Juni 2025", jamMulai: "09:45", jamSelesai: "11:15", hariAlias: "Jumat" },
-        { hariTanggalDisplay: "Jumat, 13 Juni 2025", waktuDisplay: "12.30-13.45", kelas: "X APHP", mapel: "Dasar-Dasar Agribisnis Pengolahan Hasil Pertanian (Dasar-dasar APHP)", actualLink: "https://forms.gle/RQBK22hz2katxhmKA", tanggal: "13 Juni 2025", jamMulai: "10:15", jamSelesai: "13:45", hariAlias: "Jumat" },
-        { hariTanggalDisplay: "Jumat, 13 Juni 2025", waktuDisplay: "12.30-13.45", kelas: "XI APHP", mapel: "Projek Kreatif dan Kewirausahaan", actualLink: "https://forms.gle/JfcVsbkm1zQ84qiS9", tanggal: "13 Juni 2025", jamMulai: "10:15", jamSelesai: "13:45", hariAlias: "Jumat" },
-        { hariTanggalDisplay: "Jumat, 13 Juni 2025", waktuDisplay: "12.30-13.45", kelas: "X DKV1", mapel: "Dasar-Dasar Desain Komunikasi Visual (Dasar-dasar DKV)", actualLink: "http://tiny.cc/ddkv1", tanggal: "13 Juni 2025", jamMulai: "10:15", jamSelesai: "13:45", hariAlias: "Jumat" },
-        { hariTanggalDisplay: "Jumat, 13 Juni 2025", waktuDisplay: "12.30-13.45", kelas: "X DKV2", mapel: "Dasar-Dasar Desain Komunikasi Visual (Dasar-dasar DKV)", actualLink: "https://bit.ly/PSAT-X-DKV23", tanggal: "13 Juni 2025", jamMulai: "10:15", jamSelesai: "13:45", hariAlias: "Jumat" },
-        { hariTanggalDisplay: "Jumat, 13 Juni 2025", waktuDisplay: "12.30-13.45", kelas: "X DKV3", mapel: "Dasar-Dasar Desain Komunikasi Visual (Dasar-dasar DKV)", actualLink: "https://bit.ly/PSAT-X-DKV23", tanggal: "13 Juni 2025", jamMulai: "10:15", jamSelesai: "13:45", hariAlias: "Jumat" },
-        { hariTanggalDisplay: "Jumat, 13 Juni 2025", waktuDisplay: "12.30-13.45", kelas: "XI DKV", mapel: "Projek Kreatif dan Kewirausahaan", actualLink: "https://forms.gle/p4vtVriJBF1H7ggq7", tanggal: "13 Juni 2025", jamMulai: "10:15", jamSelesai: "13:45", hariAlias: "Jumat" }
-    ];
+    let scheduleData = []; // Data akan dimuat secara asinkron dari Google Sheet
 
     const kelasSelect = document.getElementById("kelas");
     const hariSelect = document.getElementById("hari");
@@ -391,18 +315,82 @@
     const backToKelasBtn = document.getElementById("backToKelasBtn");
     const backToHariBtn = document.getElementById("backToHariBtn");
 
+    /**
+     * Mengambil data dari Google Sheet dan mengubahnya menjadi array objek
+     */
+    async function fetchScheduleData() {
+        // Tampilkan status loading dengan menyembunyikan card utama sementara
+        kelasSelectionCard.classList.add('d-none');
+        
+        try {
+            const response = await fetch(GOOGLE_SHEET_URL);
+            const text = await response.text();
+            
+            // Membersihkan respons JSON dari Google Visualization API
+            const jsonText = text.substring(text.indexOf('(') + 1, text.lastIndexOf(')'));
+            const data = JSON.parse(jsonText);
+            
+            // Mapping kolom ke properti yang diperlukan
+            // Asumsi urutan kolom di Sheet:
+            // No. (A), Hari (B), Tanggal (C), Sesi Ujian (Display) (D), Kelas (E), Mata Pelajaran (F), Jam Mulai (G), Jam Selesai (H), Link Soal (I)
+            const rawRows = data.table.rows;
+            
+            const fetchedData = rawRows.map(row => {
+                const rowData = row.c;
+                
+                // Mendapatkan nilai dari sel, menangani nilai null
+                const getValue = (index) => rowData[index] && rowData[index].v !== undefined ? rowData[index].v : null;
+                const getFormattedValue = (index) => rowData[index] && rowData[index].f !== undefined ? rowData[index].f : getValue(index);
+
+                return {
+                    hariAlias: getFormattedValue(1),       // Kolom B (Hari)
+                    tanggal: getFormattedValue(2),         // Kolom C (Tanggal)
+                    waktuDisplay: getValue(3),             // Kolom D (Sesi Ujian Display)
+                    kelas: getValue(4),                    // Kolom E (Kelas)
+                    mapel: getValue(5),                    // Kolom F (Mata Pelajaran)
+                    jamMulai: getValue(6),                 // Kolom G (Jam Mulai HH:MM)
+                    jamSelesai: getValue(7),               // Kolom H (Jam Selesai HH:MM)
+                    actualLink: getValue(8)                // Kolom I (Link Soal)
+                };
+            }).filter(item => item.kelas && item.hariAlias && item.tanggal); // Filter data yang tidak lengkap
+
+            scheduleData = fetchedData;
+            
+            // Setelah data dimuat, isi dropdown Kelas
+            populateKelasDropdown();
+
+        } catch (error) {
+            console.error("Gagal mengambil data dari Google Sheet:", error);
+            alert("⚠️ Gagal memuat jadwal ujian dari Google Sheet. Pastikan ID Sheet dan GID sudah benar, serta Sheet sudah dipublikasikan.");
+        } finally {
+            // Tampilkan kembali card utama
+            kelasSelectionCard.classList.remove('d-none');
+        }
+    }
+    
     function parseDateTime(tanggalBagian, jamBagian) {
-        const [day, monthName, year] = tanggalBagian.split(" ");
+        // Fungsi untuk mengonversi string tanggal ("10 Juni 2025") dan waktu ("08:00") menjadi objek Date
+        const dateRegex = /(\d{1,2})\s+([A-Za-z]+)\s+(\d{4})/;
+        const match = tanggalBagian.match(dateRegex);
+        
+        if (!match) {
+             console.error("Format tanggal tidak valid:", tanggalBagian);
+             return new Date(NaN);
+        }
+
+        const [ , dayStr, monthName, yearStr] = match;
         const monthMap = {
             "Januari": 0, "Februari": 1, "Maret": 2, "April": 3, "Mei": 4, "Juni": 5,
             "Juli": 6, "Agustus": 7, "September": 8, "Oktober": 9, "November": 10, "Desember": 11
         };
         const [hours, minutes] = jamBagian.split(":").map(Number);
-        if (!monthName || !day || !year || isNaN(hours) || isNaN(minutes) || monthMap[monthName] === undefined) {
-            console.error("Invalid date/time input to parseDateTime:", tanggalBagian, jamBagian);
+        
+        if (monthMap[monthName] === undefined || isNaN(hours) || isNaN(minutes)) {
+            console.error("Invalid month/time input to parseDateTime:", monthName, jamBagian);
             return new Date(NaN);
         }
-        return new Date(parseInt(year), monthMap[monthName], parseInt(day), hours, minutes, 0);
+        
+        return new Date(parseInt(yearStr), monthMap[monthName], parseInt(dayStr), hours, minutes, 0);
     }
 
     function updateCurrentTimeDisplay() {
@@ -410,7 +398,7 @@
         const options = {
             weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
             hour: '2-digit', minute: '2-digit', second: '2-digit',
-            timeZone: 'Asia/Jakarta',
+            timeZone: 'Asia/Jakarta', 
             hour12: false
         };
         try {
@@ -427,7 +415,27 @@
         selectElement.innerHTML = `<option value="" disabled selected>${defaultText}</option>`;
     }
 
+    function populateKelasDropdown() {
+        const uniqueKelas = [...new Set(scheduleData.map(item => item.kelas))].filter(Boolean).sort();
+        
+        resetDropdown(kelasSelect, uniqueKelas.length > 0 ? "-- Pilih Kelas Anda --" : "-- Tidak Ada Jadwal Ditemukan --");
+
+        if (uniqueKelas.length > 0) {
+            uniqueKelas.forEach(kelas => {
+                const option = document.createElement("option");
+                option.value = kelas;
+                option.textContent = kelas;
+                kelasSelect.appendChild(option);
+            });
+        }
+    }
+
     btnPilihKelas.addEventListener("click", () => {
+        if (scheduleData.length === 0) {
+            alert("Data jadwal ujian belum berhasil dimuat. Silakan tunggu sebentar atau refresh halaman.");
+            return;
+        }
+        
         const selectedSpecificKelas = kelasSelect.value;
         if (!selectedSpecificKelas) {
             alert("Silakan pilih kelas Anda terlebih dahulu.");
@@ -435,19 +443,26 @@
         }
 
         const filteredByKelas = scheduleData.filter(item => item.kelas === selectedSpecificKelas);
-        const uniqueHari = [...new Set(filteredByKelas.map(item => item.hariAlias))];
         
-        const orderOfDays = ["Selasa", "Rabu", "Kamis", "Jumat"]; // Urutan hari yang diinginkan
+        // Membuat daftar hari unik (alias) dan lengkap (alias + tanggal)
+        const uniqueHariMap = filteredByKelas.reduce((map, item) => {
+            if (item.hariAlias && item.tanggal) {
+                map[item.hariAlias] = `${item.hariAlias}, ${item.tanggal}`;
+            }
+            return map;
+        }, {});
+        
+        const uniqueHari = Object.keys(uniqueHariMap);
+
+        const orderOfDays = ["Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu", "Minggu"];
         uniqueHari.sort((a, b) => orderOfDays.indexOf(a) - orderOfDays.indexOf(b));
 
         resetDropdown(hariSelect, "-- Pilih Hari Ujian --");
         if (uniqueHari.length > 0) {
-            uniqueHari.forEach(hari => {
+            uniqueHari.forEach(hariAlias => {
                 const option = document.createElement("option");
-                option.value = hari; // e.g., "Selasa"
-                // Ambil hariTanggalDisplay dari item pertama yang cocok untuk tampilan lengkap
-                const firstMatch = filteredByKelas.find(item => item.hariAlias === hari);
-                option.textContent = firstMatch ? firstMatch.hariTanggalDisplay : hari; // Menampilkan "Selasa, 10 Juni 2025"
+                option.value = hariAlias; // e.g., "Selasa"
+                option.textContent = uniqueHariMap[hariAlias]; 
                 hariSelect.appendChild(option);
             });
             kelasSelectionCard.classList.add("d-none");
@@ -455,7 +470,7 @@
             mapelSelectionCard.classList.add("d-none");
             linkMapelBtn.classList.add("d-none");
         } else {
-            alert("Tidak ada jadwal ujian untuk kelas yang dipilih.");
+            alert(`Tidak ada jadwal ujian yang ditemukan untuk kelas ${selectedSpecificKelas}.`);
         }
     });
 
@@ -483,13 +498,17 @@
 
             filteredByKelasAndHari.forEach((item) => {
                 const option = document.createElement("option");
-                option.value = scheduleData.indexOf(item); 
-                option.textContent = `${item.mapel} - ${item.waktuDisplay}`; // Teks lebih ringkas
-                mapelSelect.appendChild(option);
+                // Menggunakan index di scheduleData untuk referensi
+                const dataIndex = scheduleData.findIndex(dataItem => dataItem === item);
+                if (dataIndex !== -1) {
+                    option.value = dataIndex; 
+                    option.textContent = `${item.mapel} - ${item.waktuDisplay}`; // Teks: "Mata Pelajaran - 08.00-09.30"
+                    mapelSelect.appendChild(option);
+                }
             });
             hariSelectionCard.classList.add("d-none");
             mapelSelectionCard.classList.remove("d-none");
-            linkMapelBtn.classList.add("d-none"); // Sembunyikan tombol buka soal sampai mapel dipilih
+            linkMapelBtn.classList.add("d-none"); 
         } else {
             alert("Tidak ada mata pelajaran untuk kelas dan hari yang dipilih.");
         }
@@ -509,11 +528,12 @@
             linkMapelBtn.dataset.jamMulai = examItem.jamMulai;
             linkMapelBtn.dataset.jamSelesai = examItem.jamSelesai;
             
-            const mapelNameShort = examItem.mapel.substring(0,25) + (examItem.mapel.length > 25 ? '...' : '');
+            // Tampilkan nama mapel yang lebih singkat di tombol
+            const mapelNameShort = examItem.mapel.substring(0,30) + (examItem.mapel.length > 30 ? '...' : '');
             if(linkMapelBtnTextSpan) {
-                 linkMapelBtnTextSpan.textContent = ` Buka ${mapelNameShort}`;
+                 linkMapelBtnTextSpan.textContent = ` Buka Soal ${mapelNameShort}`;
             } else {
-                 linkMapelBtn.innerHTML = `<i class="bi bi-box-arrow-up-right"></i> Buka ${mapelNameShort}`;
+                 linkMapelBtn.innerHTML = `<i class="bi bi-box-arrow-up-right"></i> <span>Buka Soal ${mapelNameShort}</span>`;
             }
             linkMapelBtn.classList.remove("d-none");
         } else {
@@ -553,7 +573,6 @@
     backToKelasBtn.addEventListener("click", () => {
         hariSelectionCard.classList.add("d-none");
         kelasSelectionCard.classList.remove("d-none");
-        // Reset dropdown hari dan mapel, serta tombol link
         resetDropdown(hariSelect, "-- Pilih Hari Ujian --");
         resetDropdown(mapelSelect, "-- Pilih Mata Pelajaran --");
         linkMapelBtn.classList.add("d-none");
@@ -562,7 +581,6 @@
     backToHariBtn.addEventListener("click", () => {
         mapelSelectionCard.classList.add("d-none");
         hariSelectionCard.classList.remove("d-none");
-        // Reset dropdown mapel dan tombol link
         resetDropdown(mapelSelect, "-- Pilih Mata Pelajaran --");
         linkMapelBtn.classList.add("d-none");
     });
@@ -570,8 +588,7 @@
     document.addEventListener('DOMContentLoaded', function() {
         updateCurrentTimeDisplay();
         setInterval(updateCurrentTimeDisplay, 1000);
-        resetDropdown(hariSelect, "-- Pilih Hari Ujian --");
-        resetDropdown(mapelSelect, "-- Pilih Mata Pelajaran --");
+        fetchScheduleData(); // Panggil fungsi untuk memuat data dari Sheet
     });
   </script>
 </body>
