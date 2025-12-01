@@ -245,7 +245,7 @@
         <div id="currentTimeContainer">
             Waktu Saat Ini (WIB): <span id="currentTimeDisplay">Memuat...</span>
         </div>
-    </div>
+      </div>
 
     <div id="kelas-selection-card" class="card">
       <label for="kelas" class="form-label">Pilih Kelas Anda:</label>
@@ -344,9 +344,8 @@
                 const hariAlias = getFormattedValue(1);       // Kolom B (Hari)
                 const tanggalDisplay = getFormattedValue(2);  // Kolom C (Tanggal - e.g., "11/26/2025")
                 
-                // **PERBAIKAN:** Menggunakan .trim() untuk membersihkan spasi di Kolom E
-                const rawKelas = getValue(4);                // Kolom E (Kelas)
-                const kelas = rawKelas ? String(rawKelas).trim() : null; // Kelas dibersihkan dari spasi
+                // **PERBAIKAN ANTI-DUPLIKASI (menggunakan .trim()):**                 const rawKelas = getValue(4);                   
+                const kelas = rawKelas ? String(rawKelas).trim() : null; // Nilai kelas dibersihkan
                 
                 const actualLink = getValue(8);               // Kolom I (Link Soal)
 
@@ -356,7 +355,7 @@
                 return {
                     hariTanggalDisplay: `${hariAlias}, ${tanggalDisplay}`, 
                     waktuDisplay: getFormattedValue(3),           // Kolom D (Sesi Ujian Display) - e.g., "08.00-20.30"
-                    kelas: kelas, // Menggunakan nilai yang sudah di-trim
+                    kelas: kelas,
                     mapel: getValue(5),                    // Kolom F (Mata Pelajaran)
                     jamMulai: getFormattedValue(6),        // Kolom G (Jam Mulai) - e.g., "8:00:00 AM"
                     jamSelesai: getFormattedValue(7),      // Kolom H (Jam Selesai) - e.g., "20:30:00 PM"
@@ -385,7 +384,6 @@
         let dateObj;
         
         // --- 1. PRE-PROCESSING JAM ---
-        // Bersihkan string waktu dari " AM", " PM", dan ":00" di akhir
         let cleanJamBagian = String(jamBagian).toUpperCase();
         // Menghilangkan AM/PM dan optional seconds (:00)
         cleanJamBagian = cleanJamBagian.replace(/\s*(AM|PM)\s*$/, '').replace(/:\d{2}$/, '').trim();
@@ -394,20 +392,19 @@
         const hours = timeParts[0];
         const minutes = timeParts.length > 1 ? timeParts[1] : 0;
         
-        // --- 2. PRE-PROCESSING TANGGAL (Try MM/DD/YYYY or DD/MM/YYYY) ---
+        // --- 2. PRE-PROCESSING TANGGAL (Try Slash Format) ---
         const slashDateMatch = String(tanggalBagian).match(/(\d{1,2})\/(\d{1,2})\/(\d{2,4})/);
         
         if (slashDateMatch) {
-            // Asumsi format default Google Sheet API di Indonesia biasanya DD/MM/YYYY atau MM/DD/YYYY.
-            // Karena sulit dipastikan tanpa info Locale, kita coba dengan format MM/DD/YYYY (standar JS dari API)
-            const [ , monthStr, dayStr, yearStr ] = slashDateMatch;
+            const [ , part1, part2, yearStr ] = slashDateMatch;
             const year = parseInt(yearStr.length === 2 ? `20${yearStr}` : yearStr);
-            // JS Date menggunakan (YYYY, MM-1, DD)
-            dateObj = new Date(year, parseInt(monthStr) - 1, parseInt(dayStr));
+
+            // Coba format MM/DD/YYYY (standar JS dari API)
+            dateObj = new Date(year, parseInt(part1) - 1, parseInt(part2));
             
-            // Jika hasilnya NaN, coba asumsi format kebalikannya DD/MM/YYYY (hanya untuk ambiguitas)
+            // Jika hasilnya NaN, coba asumsi format kebalikannya DD/MM/YYYY (hanya untuk mengatasi ambiguitas regional)
             if (isNaN(dateObj.valueOf())) {
-                dateObj = new Date(year, parseInt(dayStr) - 1, parseInt(monthStr));
+                dateObj = new Date(year, parseInt(part2) - 1, parseInt(part1));
             }
             
         } else {
@@ -417,7 +414,7 @@
         
         // --- 3. VALIDASI & SET WAKTU ---
         if (isNaN(dateObj.valueOf()) || isNaN(hours) || isNaN(minutes)) {
-            console.error("Gagal parsing DateTime. Tanggal:", tanggalBagian, "Jam:", jamBagian);
+            console.error("Gagal parsing Waktu. Tanggal:", tanggalBagian, "Jam:", jamBagian);
             return new Date(NaN);
         }
         
@@ -449,7 +446,7 @@
     }
 
     function populateKelasDropdown() {
-        // Karena nilai kelas sudah di-trim di fetchScheduleData, Set sekarang akan lebih akurat
+        // FIX: Menggunakan nilai kelas yang sudah di-trim untuk mendapatkan daftar unik
         const uniqueKelas = [...new Set(scheduleData.map(item => item.kelas))].filter(Boolean).sort();
         
         resetDropdown(kelasSelect, uniqueKelas.length > 0 ? "-- Pilih Kelas Anda --" : "-- Tidak Ada Jadwal Ditemukan --");
